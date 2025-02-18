@@ -25,6 +25,12 @@ const User = require('./models/ProfileModel');
 const UserinfoModel=require('./models/UserInfoModel');
 const CaloriesData = require('./models/caloriesData'); 
 
+// Import dependencies
+
+
+const PORT = process.env.PORT || 8000;
+
+
 
 const app = express();
 app.use(express.json({ limit: '10mb' })); // Set the limit to 10MB
@@ -36,6 +42,41 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB Atlas 🚀"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+
+app.get("/", (req, res) => {
+  res.send("MongoDB Atlas is connected!");
+});
+
+if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+  throw new Error("❌ Twilio credentials are missing. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in your .env file.");
+}
+
+// Initialize Twilio client
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+module.exports = client;
+// // database connection 
+// mongoose.connect("mongodb://localhost:27017/nutrify")
+// .then(()=>{
+//     console.log("Database connection successfull")
+// })
+// .catch((err)=>{
+//     console.log(err);
+// })
+
+
+// // database connection 
+// mongoose.connect("mongodb://localhost:27017/nutrify")
+// .then(()=>{
+//     console.log("Database connection successfull")
+// })
+// .catch((err)=>{
+//     console.log(err);
+// })
 cron.schedule('0 7 * * *', () => {
   console.log('Running daily report job');
   generateDailyReport();
@@ -230,8 +271,8 @@ app.post('/register/generate-otp', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
-        user: EMAIL_USER, // Use email from .env
-        pass: EMAIL_PASS // Use app-specific password from .env
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       },
       tls: {
         rejectUnauthorized: false,
@@ -239,11 +280,11 @@ app.post('/register/generate-otp', async (req, res) => {
     });
 
     const mailOptions = {
-      from:  EMAIL_USER, // Use email from .env
+      from:  process.env.EMAIL_USER, // Use email from .env
      
       to: email,
       subject: 'Your OTP Code',
-      text: `Your OTP code is: ${otp}`,
+      text: Your OTP code is: ${otp},
     };
 
     // Send email
@@ -396,27 +437,25 @@ app.post("/track",verifyToken,async (req,res)=>{
 })
 // endpoint to fetch all foods eaten by a person 
 
-app.get("/track/:userid/:date",async (req,res)=>{
+app.get("/track/:userid/:date", async (req, res) => {
+  let userid = req.params.userid;
+  let date = new Date(req.params.date);
 
-    let userid = req.params.userid;
-    let date = new Date(req.params.date);
-    let strDate = date.getDate()+"/"+(date.getMonth()+1)+"/"+date.getFullYear();
+  // Ensure the date format matches how it is stored in the DB
+  let strDate = (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear(); // MM/DD/YYYY
 
-    try
-    {
+  try {
+      let foods = await trackingModel.find({ userId: userid, eatenDate: strDate })
+          .populate('userId')
+          .populate('foodId');
 
-        let foods = await trackingModel.find({userId:userid,eatenDate:strDate}).populate('userId').populate('foodId')
-        res.send(foods);
+      res.send(foods);
+  } catch (err) {
+      console.log(err);
+      res.status(500).send({ message: "Some Problem in getting the food" });
+  }
+});
 
-    }
-    catch(err)
-    {
-        console.log(err);
-        res.status(500).send({message:"Some Problem in getting the food"})
-    }
-
-
-})
     app.get('/user/:userId/posts', async (req, res) => {
       const { userId } = req.params; // This should be the user ID
       try {
@@ -673,9 +712,15 @@ app.get('/posts', verifyToken, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-app.listen(8000,()=>{
-    console.log("Server is up and running");
-})
+
+// Start server
+
+app.listen(PORT, () => {
+    console.log(🚀 Server is running on port ${PORT});
+});
+// app.listen(8000,()=>{
+//     console.log("Server is up and running");
+// })
 /*app.post("/physical_info", verifyToken, async (req, res) => {
     const phyData = req.body;
 
