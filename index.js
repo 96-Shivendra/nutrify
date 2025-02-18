@@ -243,7 +243,8 @@ app.post('/register/generate-otp', async (req, res) => {
      
       to: email,
       subject: 'Your OTP Code',
-      text: Your OTP code is: ${otp},
+      text: `Your OTP code is: ${otp}`,
+
     };
 
     // Send email
