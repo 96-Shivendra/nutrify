@@ -33,14 +33,9 @@ app.use(cors());
 const storage = multer.memoryStorage(); // Store files in memory
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
-// database connection 
-mongoose.connect("mongodb://localhost:27017/nutrify")
-.then(()=>{
-    console.log("Database connection successfull")
-})
-.catch((err)=>{
-    console.log(err);
-})
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB Atlas 🚀"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
 cron.schedule('0 7 * * *', () => {
   console.log('Running daily report job');
   generateDailyReport();
